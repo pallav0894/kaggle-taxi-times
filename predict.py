@@ -5,9 +5,38 @@ import re
 import numpy as np
 from sklearn import datasets, linear_model, metrics
 from sklearn.metrics import mean_squared_error
+import pandas as pd
+
+
+def csv_from_pandas():
+    training_data = pd.read_csv(open('data/train.csv'), nrows=100000)
+    train_call_type_a = training_data[training_data['CALL_TYPE'] == "A"]
+    train_call_type_b = training_data[training_data['CALL_TYPE'] == "B"]
+    train_call_type_c = training_data[training_data['CALL_TYPE'] == "C"]
+    print(train_call_type_a.head(1000))
+
+
+def load_taxi_meta_data():
+    taxi_stand_id_to_lat_lon = {}
+    with open('data/metaData_taxistandsID_name_GPSlocation.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(row)
+                line_count += 1
+                next
+            else:
+                taxi_stand_id_to_lat_lon[int(row[0])] = [float(row[2]), float(row[3])]
+
+        print(f'Processed {line_count} lines.')
+        return taxi_stand_id_to_lat_lon
+
 
 def csv_processing():
+    taxi_stand_id_to_lat_lon = load_taxi_meta_data()
     trip_metrics = []
+    target_distance_yi = []
     with open('data/train.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
@@ -15,18 +44,30 @@ def csv_processing():
             if line_count == 0:
                 print(row)
                 line_count += 1
-                # next
+                next
             elif line_count == 10000:
                 break
             else:
-                trip_metrics += [row[5], row[8]]
+                if row[7] == "True" or row[1] == "A" or row[1] == "C":
+                    next
+                timestamp = int(row[5])
+                hour, weekday = from_unix_timestamp(timestamp)
+                origin_stand_lat = taxi_stand_id_to_lat_lon[int(row[3])][0]
+                origin_stand_lon = taxi_stand_id_to_lat_lon[int(row[3])][1]
+                distance_yi = distance_from_polyline(list_from_polyline_string(row[8]))
+
+                trip_metrics.append([hour, weekday, origin_stand_lat, origin_stand_lon])
+                target_distance_yi.append(distance_yi)
                 line_count += 1
 
         print(f'Processed {line_count} lines.')
-        return trip_metrics
+        return trip_metrics, target_distance_yi
+
 
 def main():
     trip_metrics = csv_processing()
+    xi = np.array(trip_metrics)
+
 
 
 def time_from_polyline(polyline):
@@ -68,7 +109,7 @@ def distance_gps_coordinates(c1, c2):
 
 
 def distance_from_polyline(polyline):
-    final_dist = 0
+    final_dist = 0.00
     for i in range(len(polyline)):
         if i == len(polyline)-1:
             break
@@ -86,9 +127,7 @@ def from_unix_timestamp(ts):
     return hour, week_day
 
 
-from_unix_timestamp(1372636858)
-str = "[[-8.618643,41.141412],[-8.618499,41.141376],[-8.620326,41.14251],[-8.622153,41.143815],[-8.623953,41.144373],[-8.62668,41.144778],[-8.627373,41.144697],[-8.630226,41.14521],[-8.632746,41.14692],[-8.631738,41.148225],[-8.629938,41.150385],[-8.62911,41.151213],[-8.629128,41.15124],[-8.628786,41.152203],[-8.628687,41.152374],[-8.628759,41.152518],[-8.630838,41.15268],[-8.632323,41.153022],[-8.631144,41.154489],[-8.630829,41.154507],[-8.630829,41.154516],[-8.630829,41.154498],[-8.630838,41.154489]]"
-print(list_from_polyline_string(str))
+from_unix_timestamp(1372637303)
 
 
 
