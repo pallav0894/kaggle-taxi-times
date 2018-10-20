@@ -69,8 +69,9 @@ def main():
     xi = np.array(trip_metrics)
 
 
-
 def time_from_polyline(polyline):
+    if len(polyline) == 0:
+        return 0
     return (len(polyline)-1)*15
 
 
@@ -123,14 +124,38 @@ def from_unix_timestamp(ts):
     dt = datetime.datetime.fromtimestamp(ts)
     hour = dt.hour
     week_day = dt.weekday()
-    print(hour, week_day)
-    return hour, week_day
+    minute = dt.minute
+    # print(hour, week_day)
+    # return [hour, minute]
+    return dt
 
 
-from_unix_timestamp(1372637303)
+# from_unix_timestamp(1372637303)
+
+def hours_from_test_set():
+    hours = []
+    with open('data/test_public.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print(row)
+                line_count += 1
+
+            else:
+
+                hours += [from_unix_timestamp(int(row[5]))]
+
+        print(f'Processed {line_count} lines.')
+
+    hr_set = [x[0] for x in hours]
+    hours.sort(key= lambda x: x[0])
+    print(hours)
+    print(sorted(hr_set))
 
 
 
+# hours_from_test_set()
 
 
 
